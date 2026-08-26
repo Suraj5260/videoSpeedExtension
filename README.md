@@ -90,8 +90,4 @@ videoSpeedExtension/
 └── icons/              # Extension icons (16x16, 48x48, 128x128)
 ```
 
----
 
-## 📝 License
-
-This project is licensed under the [MIT License](LICENSE).

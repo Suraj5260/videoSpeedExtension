@@ -1,0 +1,71 @@
+{
+  "manifest_version": 3,
+  "name": "Video Speed Master",
+  "version": "1.3.0",
+  "description": "Universal video speed controller with draggable overlay, customizable shortcuts, preset toggles, and speed steps.",
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Video Speed Master",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_end",
+      "all_frames": true
+    }
+  ],
+  "commands": {
+    "increase_speed": {
+      "suggested_key": {
+        "default": "Alt+D"
+      },
+      "description": "Increase video playback speed"
+    },
+    "decrease_speed": {
+      "suggested_key": {
+        "default": "Alt+S"
+      },
+      "description": "Decrease video playback speed"
+    },
+    "toggle_preset": {
+      "suggested_key": {
+        "default": "Alt+G"
+      },
+      "description": "Toggle preset video speed"
+    },
+    "reset_speed": {
+      "suggested_key": {
+        "default": "Alt+R"
+      },
+      "description": "Reset speed to 1.0x"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

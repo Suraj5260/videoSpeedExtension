@@ -1,0 +1,208 @@
+/* Video Speed Master - Content Overlay CSS */
+
+.vsm-overlay-wrapper {
+  position: absolute !important;
+  z-index: 2147483647 !important; /* Max z-index */
+  pointer-events: none !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  line-height: 1 !important;
+}
+
+.vsm-hidden {
+  display: none !important;
+}
+
+.vsm-overlay-container {
+  display: inline-flex;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 4px 8px !important;
+  background: rgba(15, 23, 42, 0.85) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+  color: #f8fafc !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  pointer-events: auto !important;
+  opacity: 0.85 !important;
+  transition: opacity 0.25s ease, transform 0.2s ease, box-shadow 0.2s ease !important;
+  cursor: default !important;
+}
+
+.vsm-overlay-container:hover {
+  opacity: 1 !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 12px rgba(99, 102, 241, 0.4) !important;
+  border-color: rgba(129, 140, 248, 0.4) !important;
+}
+
+.vsm-overlay-container.vsm-dragging {
+  opacity: 1 !important;
+  cursor: grabbing !important;
+  transform: scale(1.03) !important;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7), 0 0 20px rgba(129, 140, 248, 0.6) !important;
+}
+
+/* Drag Handle */
+.vsm-drag-handle {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 3px 4px !important;
+  cursor: grab !important;
+  color: rgba(255, 255, 255, 0.5) !important;
+  border-radius: 4px !important;
+  transition: color 0.15s ease, background-color 0.15s ease !important;
+}
+
+.vsm-drag-handle:hover {
+  color: #818cf8 !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.vsm-drag-handle svg {
+  width: 12px !important;
+  height: 12px !important;
+  fill: currentColor !important;
+}
+
+/* Buttons */
+.vsm-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 24px !important;
+  height: 24px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #f1f5f9 !important;
+  font-family: inherit !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  border-radius: 50% !important;
+  cursor: pointer !important;
+  outline: none !important;
+  transition: background-color 0.15s ease, transform 0.1s ease, color 0.15s ease !important;
+}
+
+.vsm-btn:hover {
+  background: rgba(99, 102, 241, 0.6) !important;
+  color: #ffffff !important;
+  transform: scale(1.1) !important;
+}
+
+.vsm-btn:active {
+  transform: scale(0.95) !important;
+}
+
+/* Speed Badge */
+.vsm-speed-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 3px 8px !important;
+  min-width: 48px !important;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(168, 85, 247, 0.25)) !important;
+  border: 1px solid rgba(168, 85, 247, 0.3) !important;
+  border-radius: 12px !important;
+  color: #38bdf8 !important;
+  font-family: 'SF Mono', Monaco, Consolas, 'Courier New', monospace !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  letter-spacing: 0.5px !important;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease !important;
+}
+
+.vsm-speed-badge:hover {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.5), rgba(168, 85, 247, 0.5)) !important;
+  border-color: rgba(56, 189, 248, 0.6) !important;
+  transform: scale(1.05) !important;
+  color: #ffffff !important;
+}
+
+.vsm-speed-badge.vsm-is-preset {
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.3), rgba(249, 115, 22, 0.3)) !important;
+  border-color: rgba(234, 179, 8, 0.6) !important;
+  color: #fde047 !important;
+}
+
+/* Preset Button */
+.vsm-btn-preset {
+  font-size: 11px !important;
+  background: rgba(234, 179, 8, 0.15) !important;
+  color: #fde047 !important;
+}
+
+.vsm-btn-preset:hover {
+  background: rgba(234, 179, 8, 0.7) !important;
+  color: #000000 !important;
+}
+
+.vsm-btn-preset.active {
+  background: #eab308 !important;
+  color: #0f172a !important;
+  box-shadow: 0 0 10px rgba(234, 179, 8, 0.5) !important;
+}
+
+/* Close Button */
+.vsm-btn-close {
+  width: 18px !important;
+  height: 18px !important;
+  font-size: 13px !important;
+  opacity: 0.6 !important;
+  background: transparent !important;
+}
+
+.vsm-btn-close:hover {
+  opacity: 1 !important;
+  background: rgba(239, 68, 68, 0.6) !important;
+  color: #ffffff !important;
+}
+
+/* Toast Feedback Notification on Video */
+.vsm-toast-notification {
+  position: absolute !important;
+  top: 40% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) scale(0.9) !important;
+  background: rgba(15, 23, 42, 0.9) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(129, 140, 248, 0.4) !important;
+  border-radius: 14px !important;
+  padding: 10px 20px !important;
+  color: #ffffff !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  z-index: 2147483647 !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(99, 102, 241, 0.5) !important;
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.vsm-toast-notification.vsm-toast-show {
+  opacity: 1 !important;
+  transform: translate(-50%, -50%) scale(1) !important;
+}
+
+.vsm-toast-icon {
+  color: #38bdf8 !important;
+  font-size: 20px !important;
+}
+
+/* Auto-hide feature when mouse idle */
+.vsm-autohide {
+  opacity: 0.2 !important;
+}

@@ -4,7 +4,6 @@
 
 ![Manifest V3](https://img.shields.io/badge/Manifest-V3-indigo.svg)
 ![Version](https://img.shields.io/badge/version-1.3.1-emerald.svg)
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
 **Video Speed Master** automatically detects HTML5 videos on any website (YouTube, Coursera, Vimeo, Netflix, Twitter/X, local files, etc.) and provides a floating draggable overlay controller, keyboard hotkeys, speed persistence modes, customizable increments, and a complete popup tray panel.
 

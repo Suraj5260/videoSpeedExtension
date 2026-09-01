@@ -19,7 +19,7 @@
   };
 
   // State management
-  let trackedVideos = new Map(); // video -> { wrapper, overlay, toast, prevSpeed }
+  let trackedVideos = new Map(); // video -> { video, targetSpeed, prevSpeed, lastSrc, isSyncing, wrapper, overlay }
   let activeVideo = null;
   let toastTimer = null;
   let idleTimer = null;
@@ -53,9 +53,19 @@
   }
 
   /**
-   * Scan DOM for HTML5 Video elements
+   * Scan DOM for HTML5 Video elements & prune disconnected videos
    */
   function scanVideos() {
+    // Prune videos no longer in DOM
+    for (const [video, data] of trackedVideos.entries()) {
+      if (!document.contains(video)) {
+        if (data.wrapper && data.wrapper.parentNode) {
+          data.wrapper.parentNode.removeChild(data.wrapper);
+        }
+        trackedVideos.delete(video);
+      }
+    }
+
     const videos = Array.from(document.querySelectorAll('video'));
     videos.forEach((video) => {
       if (!trackedVideos.has(video)) {
@@ -64,9 +74,9 @@
     });
 
     // Check for active playing video
-    if (!activeVideo && videos.length > 0) {
+    if (!activeVideo || !document.contains(activeVideo)) {
       const playing = videos.find((v) => !v.paused);
-      activeVideo = playing || videos[0];
+      activeVideo = playing || videos[0] || null;
     }
   }
 
@@ -99,38 +109,66 @@
   function attachToVideo(video) {
     if (trackedVideos.has(video)) return;
 
+    const initialSpeed = (settings.rememberSpeed && settings.preferredSpeed) ? settings.preferredSpeed : 1.0;
+
     const data = {
       video: video,
+      targetSpeed: initialSpeed,
       prevSpeed: 1.0,
+      lastSrc: video.currentSrc || video.src || '',
+      isSyncing: false,
       overlay: null,
       wrapper: null
     };
 
     trackedVideos.set(video, data);
 
-    // Apply speed persistence preference
-    if (settings.rememberSpeed && settings.preferredSpeed) {
-      video.playbackRate = settings.preferredSpeed;
-    } else {
-      video.playbackRate = 1.0;
-    }
+    // Apply speed preference to video element initially
+    try {
+      video.playbackRate = data.targetSpeed;
+    } catch (e) { }
 
     // Set initial active video
     if (!activeVideo) activeVideo = video;
 
     const syncVideoSpeedAndUI = () => {
-      if (settings.rememberSpeed && settings.preferredSpeed) {
-        if (Math.abs(video.playbackRate - settings.preferredSpeed) > 0.01) {
-          video.playbackRate = settings.preferredSpeed;
+      if (data.isSyncing) return;
+
+      // Detect video source changes on single page app or player source replacement
+      const currentSrc = video.currentSrc || video.src || '';
+      if (currentSrc && data.lastSrc && currentSrc !== data.lastSrc) {
+        data.lastSrc = currentSrc;
+        // Reset speed for new video if rememberSpeed is disabled
+        if (!settings.rememberSpeed) {
+          data.targetSpeed = 1.0;
+        } else if (settings.preferredSpeed) {
+          data.targetSpeed = settings.preferredSpeed;
         }
-      } else {
-        video.playbackRate = 1.0;
+      }
+
+      if (Math.abs(video.playbackRate - data.targetSpeed) > 0.01) {
+        data.isSyncing = true;
+        try {
+          video.playbackRate = data.targetSpeed;
+        } catch (e) {
+          console.warn('VSM: Failed to sync playbackRate', e);
+        }
+        data.isSyncing = false;
       }
       updateOverlayText(data);
     };
 
-    // Video Event Listeners
+    // Video Event Listeners to ensure speed is maintained upon pause, play, or player resets
     video.addEventListener('play', () => {
+      activeVideo = video;
+      syncVideoSpeedAndUI();
+    });
+
+    video.addEventListener('pause', () => {
+      syncVideoSpeedAndUI();
+    });
+
+    video.addEventListener('playing', () => {
       activeVideo = video;
       syncVideoSpeedAndUI();
     });
@@ -161,7 +199,7 @@
     });
 
     video.addEventListener('ratechange', () => {
-      updateOverlayText(data);
+      syncVideoSpeedAndUI();
     });
 
     // Create floating overlay container
@@ -203,10 +241,10 @@
       </div>
       <button class="vsm-btn vsm-btn-minus" title="Decrease speed (S)">-</button>
       <div class="vsm-speed-badge" title="Click to reset (R) or set speed">
-        <span class="vsm-speed-text">${formatSpeed(video.playbackRate)}</span>
+        <span class="vsm-speed-text">${formatSpeed(data.targetSpeed !== undefined ? data.targetSpeed : video.playbackRate)}</span>
       </div>
       <button class="vsm-btn vsm-btn-plus" title="Increase speed (D)">+</button>
-      <button class="vsm-btn vsm-btn-preset ${video.playbackRate === settings.presetSpeed ? 'active' : ''}" title="Toggle Preset Speed (G)">⚡</button>
+      <button class="vsm-btn vsm-btn-preset" title="Toggle Preset Speed (G)">⚡</button>
       <button class="vsm-btn vsm-btn-close" title="Hide Overlay (V to toggle)">&times;</button>
     `;
 
@@ -346,7 +384,9 @@
    */
   function adjustSpeed(video, delta) {
     if (!video) return;
-    const newSpeed = Math.min(16.0, Math.max(0.1, Math.round((video.playbackRate + delta) * 100) / 100));
+    const data = trackedVideos.get(video);
+    const currentSpeed = data && data.targetSpeed !== undefined ? data.targetSpeed : video.playbackRate;
+    const newSpeed = Math.min(16.0, Math.max(0.1, Math.round((currentSpeed + delta) * 100) / 100));
     setSpeed(video, newSpeed);
   }
 
@@ -356,11 +396,20 @@
   function setSpeed(video, targetSpeed) {
     if (!video) return;
     const data = trackedVideos.get(video);
-    if (data && video.playbackRate !== settings.presetSpeed && targetSpeed === settings.presetSpeed) {
-      data.prevSpeed = video.playbackRate;
+    if (!data) return;
+
+    if (data.targetSpeed !== settings.presetSpeed && targetSpeed === settings.presetSpeed) {
+      data.prevSpeed = data.targetSpeed;
     }
 
-    video.playbackRate = targetSpeed;
+    data.targetSpeed = targetSpeed;
+    data.isSyncing = true;
+    try {
+      video.playbackRate = targetSpeed;
+    } catch (e) {
+      console.warn('VSM: Failed to set playbackRate', e);
+    }
+    data.isSyncing = false;
 
     if (settings.rememberSpeed) {
       settings.preferredSpeed = targetSpeed;
@@ -369,7 +418,12 @@
       // Apply to all other tracked videos on current page
       trackedVideos.forEach((d) => {
         if (d.video && d.video !== video) {
-          d.video.playbackRate = targetSpeed;
+          d.targetSpeed = targetSpeed;
+          d.isSyncing = true;
+          try {
+            d.video.playbackRate = targetSpeed;
+          } catch (e) { }
+          d.isSyncing = false;
         }
       });
     }
@@ -391,16 +445,18 @@
   function togglePresetSpeed(video) {
     if (!video) return;
     const data = trackedVideos.get(video);
-    const current = video.playbackRate;
+    if (!data) return;
+
+    const current = data.targetSpeed !== undefined ? data.targetSpeed : video.playbackRate;
     const preset = settings.presetSpeed || 2.0;
 
     if (Math.abs(current - preset) < 0.05) {
       // Return to previous speed or 1.0x
-      const returnSpeed = data && data.prevSpeed ? data.prevSpeed : 1.0;
+      const returnSpeed = data.prevSpeed !== undefined ? data.prevSpeed : 1.0;
       setSpeed(video, returnSpeed);
     } else {
       // Store current as prevSpeed & set to preset
-      if (data) data.prevSpeed = current;
+      data.prevSpeed = current;
       setSpeed(video, preset);
     }
   }
@@ -411,13 +467,14 @@
   function updateOverlayText(data) {
     if (!data || !data.overlay) return;
     const video = data.video;
+    const currentSpeed = data.targetSpeed !== undefined ? data.targetSpeed : video.playbackRate;
     const speedText = data.overlay.querySelector('.vsm-speed-text');
     const badge = data.overlay.querySelector('.vsm-speed-badge');
     const btnPreset = data.overlay.querySelector('.vsm-btn-preset');
 
-    if (speedText) speedText.textContent = formatSpeed(video.playbackRate);
+    if (speedText) speedText.textContent = formatSpeed(currentSpeed);
 
-    const isPresetActive = Math.abs(video.playbackRate - settings.presetSpeed) < 0.05;
+    const isPresetActive = Math.abs(currentSpeed - settings.presetSpeed) < 0.05;
     if (btnPreset) {
       if (isPresetActive) {
         btnPreset.classList.add('active');
@@ -461,8 +518,13 @@
   function updateAllOverlays() {
     trackedVideos.forEach((data) => {
       if (settings.rememberSpeed && settings.preferredSpeed && data.video) {
+        data.targetSpeed = settings.preferredSpeed;
         if (Math.abs(data.video.playbackRate - settings.preferredSpeed) > 0.01) {
-          data.video.playbackRate = settings.preferredSpeed;
+          data.isSyncing = true;
+          try {
+            data.video.playbackRate = settings.preferredSpeed;
+          } catch (e) { }
+          data.isSyncing = false;
         }
       }
 
@@ -563,10 +625,12 @@
       const targetVideo = getActiveVideo();
 
       if (request.action === 'GET_STATUS') {
+        const data = targetVideo ? trackedVideos.get(targetVideo) : null;
+        const currentSpeed = data && data.targetSpeed !== undefined ? data.targetSpeed : (targetVideo ? targetVideo.playbackRate : 1.0);
         sendResponse({
           hasVideo: !!targetVideo,
           videoCount: trackedVideos.size,
-          currentSpeed: targetVideo ? targetVideo.playbackRate : 1.0,
+          currentSpeed: currentSpeed,
           isPaused: targetVideo ? targetVideo.paused : true,
           settings: settings
         });
@@ -578,22 +642,25 @@
         return true;
       }
 
+      const data = trackedVideos.get(targetVideo);
+      const speedBefore = data && data.targetSpeed !== undefined ? data.targetSpeed : targetVideo.playbackRate;
+
       switch (request.action) {
         case 'SET_SPEED':
           setSpeed(targetVideo, request.speed);
-          sendResponse({ success: true, currentSpeed: targetVideo.playbackRate });
+          sendResponse({ success: true, currentSpeed: data ? data.targetSpeed : targetVideo.playbackRate });
           break;
         case 'ADJUST_SPEED':
           adjustSpeed(targetVideo, request.delta);
-          sendResponse({ success: true, currentSpeed: targetVideo.playbackRate });
+          sendResponse({ success: true, currentSpeed: data ? data.targetSpeed : targetVideo.playbackRate });
           break;
         case 'TOGGLE_PRESET':
           togglePresetSpeed(targetVideo);
-          sendResponse({ success: true, currentSpeed: targetVideo.playbackRate });
+          sendResponse({ success: true, currentSpeed: data ? data.targetSpeed : targetVideo.playbackRate });
           break;
         case 'RESET_SPEED':
           resetSpeed(targetVideo);
-          sendResponse({ success: true, currentSpeed: targetVideo.playbackRate });
+          sendResponse({ success: true, currentSpeed: data ? data.targetSpeed : targetVideo.playbackRate });
           break;
         case 'UPDATE_SETTINGS':
           settings = { ...settings, ...request.settings };
